@@ -108,6 +108,7 @@
     "coverage-istanbul-loader": "^3.0.5",
     "date-format": "^4.0.14",
     "dicom-parser": "^1.8.9",
+    "localforage": "^1.10.0",
     "pako": "^2.0.4",
     "uuid": "^9.0.0"
   },
