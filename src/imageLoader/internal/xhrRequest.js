@@ -170,7 +170,9 @@ function xhrRequest(
 
     if (options?.cache?.readCacheProxy && options.readCache) {
       options?.cache?.readCacheProxy(xhr, url, resolve).then((isCached) => {
-        if (!isCached) xhr.send();
+        if (!isCached) {
+          xhr.send();
+        }
       });
     } else {
       xhr.send();

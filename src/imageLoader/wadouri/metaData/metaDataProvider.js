@@ -9,6 +9,7 @@ import getModalityLUTOutputPixelRepresentation from './getModalityLUTOutputPixel
 import { getDirectFrameInformation } from '../combineFrameInstanceDataset.js';
 import multiframeDataset from '../retrieveMultiframeDataset.js';
 
+/* eslint complexity: off */
 function metaDataProvider(type, imageId) {
   const parsedImageId = parseImageId(imageId);
 
