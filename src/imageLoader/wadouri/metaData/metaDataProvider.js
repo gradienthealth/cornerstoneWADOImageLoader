@@ -7,6 +7,7 @@ import getOverlayPlaneModule from './getOverlayPlaneModule.js';
 import getLUTs from './getLUTs.js';
 import getModalityLUTOutputPixelRepresentation from './getModalityLUTOutputPixelRepresentation.js';
 
+/* eslint complexity: off */
 function metaDataProvider(type, imageId) {
   const { dicomParser } = external;
   const parsedImageId = parseImageId(imageId);

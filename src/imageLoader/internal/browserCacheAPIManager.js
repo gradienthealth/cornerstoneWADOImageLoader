@@ -90,9 +90,7 @@ const getScope = ({ url }) => {
   if (isDicomWeb.length === 1) {
     return 'default-cornerstone-WADO-cache';
   }
-  const base = isDicomWeb[0] + 'series/';
-  const series = isDicomWeb[1].split('/')[0];
-  const scope = base + series;
+  const scope = `${isDicomWeb[0]}series/${isDicomWeb[1].split('/')[0]}`;
 
   return scope;
 };
@@ -196,6 +194,7 @@ const readCacheProxy = async (xhr, url, resolve) => {
     return true;
   } catch (e) {
     console.error(e);
+
     return false;
   }
 };
