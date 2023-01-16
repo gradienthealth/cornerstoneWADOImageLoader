@@ -24,10 +24,10 @@ let options = {
   strict: false,
   decodeConfig: {
     convertFloatPixelDataToInt: true,
-    use16BitDataType: false,
+    use16BitDataType: true,
   },
   readCache: true,
-  writeCache: false, // only write for prefetch
+  writeCache: true, // only write for prefetch
   cache: {
     getScope,
     readCacheProxy,
