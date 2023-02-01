@@ -33,7 +33,7 @@ let options = {
     readCacheProxy,
     writeCacheProxy,
   },
-  withCredentials: true,
+  withCredentials: false,
 };
 
 export function setOptions(newOptions) {
