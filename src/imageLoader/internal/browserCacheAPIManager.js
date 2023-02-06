@@ -1,83 +1,4 @@
-import localforage from 'localforage';
 import external from '../../externalModules.js';
-
-window.localforage = localforage;
-
-class CachePoolAPIManager {
-  constructor() {
-    // key - [byte estimates]
-    this.pool = {};
-    this.grabTimeout = null;
-  }
-
-  /**
-   * Takes a key + size. After a set amount of time (10ms)
-   * reduce sum the key size and set in localforage.
-   */
-  saveLocalForagePool() {
-    const pool = JSON.parse(JSON.stringify(this.pool));
-
-    this.pool = {};
-    const reducedPool = Object.keys(pool).reduce((prev, key) => {
-      prev[key] = pool[key].reduce((b, a) => b + a, 0);
-
-      return prev;
-    }, {});
-
-    const updateLocalForage = () =>
-      Object.keys(reducedPool).map((key) =>
-        localforage.getItem(key).then((obj) => {
-          if (!obj) {
-            obj = {
-              date: null,
-              byteLengthEstimate: 0,
-            };
-          }
-          obj.date = new Date();
-          obj.byteLengthEstimate += reducedPool[key];
-
-          return localforage.setItem(key, obj);
-        })
-      );
-
-    const allPromises = Promise.all(updateLocalForage());
-
-    allPromises.catch(async (error) => {
-      external.cornerstone.triggerEvent(
-        external.cornerstone.events,
-        'CORNERSTONE_LOCALFORAGE_WRITE_FAILURE',
-        {
-          error,
-          localforage,
-          scopes: Object.keys(pool),
-          retry: () => Promise.all(updateLocalForage()),
-        }
-      );
-    });
-
-    return allPromises;
-  }
-
-  addToLocalForagePool(key, value) {
-    clearTimeout(this.grabTimeout);
-    this.grabTimeout = setTimeout(this.saveLocalForagePool.bind(this), 100);
-    if (!this.pool[key]) {
-      this.pool[key] = [];
-    }
-    this.pool[key].push(value);
-  }
-
-  removeFromLocalForagePool(key, value) {
-    clearTimeout(this.grabTimeout);
-    this.grabTimeout = setTimeout(this.saveLocalForagePool.bind(this), 100);
-    if (!this.pool[key]) {
-      this.pool[key] = [];
-    }
-    this.pool[key].push(-1 * value);
-  }
-}
-
-const cachePoolAPIManager = new CachePoolAPIManager();
 
 const getScope = ({ url }) => {
   /**
@@ -123,6 +44,16 @@ const writeCacheProxy = (xhr) => {
       headers: getXHRJSONHeaders(xhr),
     });
 
+    const req = new Request(xhr.responseURL, {
+      headers: {
+        'dicom-last-put-date': new Date().toUTCString(),
+        'dicom-last-viewed-date': 'undefined',
+        'dicom-content-length':
+          xhr.response instanceof ArrayBuffer
+            ? `${xhr.response.byteLength}`
+            : 'undefined',
+      },
+    });
     const triggerQuotaError = () => {
       const error = new DOMError('QuotaExceededError');
 
@@ -134,8 +65,6 @@ const writeCacheProxy = (xhr) => {
           xhr,
           scope,
           cache,
-          cachePoolAPIManager,
-          localforage,
           retry: () => cacheLogic(cache, scope, xhr),
         }
       );
@@ -143,22 +72,12 @@ const writeCacheProxy = (xhr) => {
       return error;
     };
 
-    return new Promise((resolve, reject) => {
-      cache
-        .put(xhr.responseURL, res)
-        .then(() => {
-          cachePoolAPIManager.addToLocalForagePool(
-            scope,
-            xhr.response.byteLength
-          );
-          resolve();
-        })
-        .catch((error) => {
-          if (error.name === 'QuotaExceededError') {
-            triggerQuotaError();
-          }
-          reject(error);
-        });
+    return cache.put(req, res).catch((error) => {
+      if (error.name === 'QuotaExceededError') {
+        triggerQuotaError();
+      } else {
+        console.error(error);
+      }
     });
   };
 
@@ -188,8 +107,23 @@ const readCacheProxy = async (xhr, url, resolve) => {
       return false;
     }
 
+    const resClone = res.clone();
+
     xhr.getResponseHeader = (name) => res.headers.get(name);
-    resolve(res.arrayBuffer());
+    const arrayBuffer = res.arrayBuffer();
+    const contentLength = arrayBuffer.byteLength;
+
+    resolve(arrayBuffer);
+
+    const req = new Request(url, {
+      headers: {
+        'dicom-last-put-date': new Date().toUTCString(),
+        'dicom-last-viewed-date': new Date().toUTCString(),
+        'dicom-content-length': `${contentLength}`,
+      },
+    });
+
+    cache.put(req, resClone);
 
     return true;
   } catch (e) {
