@@ -1,9 +1,15 @@
 import external from '../../externalModules.js';
 import { getOptions } from './options.js';
 
-function xhrRequest(url, imageId, defaultHeaders = {}, params = {}) {
+function xhrRequest(
+  url,
+  imageId,
+  defaultHeaders = {},
+  params = {},
+  customOptions = null
+) {
   const { cornerstone } = external;
-  const options = getOptions();
+  const options = customOptions || getOptions();
 
   const errorInterceptor = (xhr) => {
     if (typeof options.errorInterceptor === 'function') {
@@ -161,7 +167,16 @@ function xhrRequest(url, imageId, defaultHeaders = {}, params = {}) {
       errorInterceptor(xhr);
       reject(xhr);
     };
-    xhr.send();
+
+    if (options?.cache?.readCacheProxy && options.readCache) {
+      options?.cache?.readCacheProxy(xhr, url, resolve).then((isCached) => {
+        if (!isCached) {
+          xhr.send();
+        }
+      });
+    } else {
+      xhr.send();
+    }
   });
 
   promise.xhr = xhr;
