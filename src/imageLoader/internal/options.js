@@ -1,3 +1,9 @@
+import {
+  writeCacheProxy,
+  readCacheProxy,
+  getScope,
+} from './browserCacheAPIManager.js';
+
 let options = {
   // callback to open the object
   open(xhr, url) {
@@ -7,6 +13,10 @@ let options = {
   beforeSend(/* xhr, imageId */) {},
   // callback allowing modification of the xhr response before creating image objects
   beforeProcessing(xhr) {
+    if (this.writeCache) {
+      writeCacheProxy(xhr);
+    }
+
     return Promise.resolve(xhr.response);
   },
   // callback allowing modification of newly created image objects
@@ -15,6 +25,13 @@ let options = {
   decodeConfig: {
     convertFloatPixelDataToInt: true,
     use16BitDataType: false,
+  },
+  readCache: true,
+  writeCache: true, // only write for prefetch
+  cache: {
+    getScope,
+    readCacheProxy,
+    writeCacheProxy,
   },
 };
 
