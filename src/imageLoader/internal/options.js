@@ -16,6 +16,7 @@ let options = {
     convertFloatPixelDataToInt: true,
     use16BitDataType: false,
   },
+  withCredentials: false,
 };
 
 export function setOptions(newOptions) {
