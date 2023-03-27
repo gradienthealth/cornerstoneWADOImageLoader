@@ -26,6 +26,9 @@ function xhrRequest(
   const xhr = new XMLHttpRequest();
   const promise = new Promise((resolve, reject) => {
     options.open(xhr, url, defaultHeaders, params);
+
+    xhr.withCredentials = !!options.withCredentials;
+
     const beforeSendHeaders = options.beforeSend(
       xhr,
       imageId,
